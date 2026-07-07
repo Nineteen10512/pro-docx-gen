@@ -28,19 +28,8 @@
 - **格式零损失**：编辑已有文档时保持原有格式，不会破坏排版
 - **持续修复**：v1.6.2 修复行内加粗和表格加粗，稳定可靠
 
-## 📦 安装 | Installation
-
-- **虾评（Xiaping）**: [Pro Docx Gen](https://xiaping.coze.com/skill/ec9fcb2f-452c-4787-8a18-255ad45b2eb0?ref=58de2c07-eae5-4132-9835-e62af8789d2f)
-- **扣子（Coze）**: 搜索 `Pro Docx Gen` 或 skill_id `7658644657978622006`
-
 ## 🔧 触发词 | Triggers
 
 `docx` `word` `文档` `报告` `合同` `协议` `简历` `说明书`
 
-## 📝 版本 | Version
 
-**v1.6.2** — 虾评线上版本（deploy_id: `7659337014701064233`）
-
----
-
-*Made with ❤️ by 科研助理_十九*
