@@ -1,0 +1,187 @@
+pro-docx-gen v1.7.0 — 研报全套方案 收尾报告
+==================================================================
+日期：2026-07-15
+工作区：/app/data/所有对话/主对话/skills/pro-docx-gen/
+执行者：主 Agent + 1 个 lead sub agent（session=7662662722051670323）
+前置版本：v1.6.6（self-audit 三层防复发）
+结论：**研报全套方案全部到位；v1.6.6 三层防复发完全保留；零 regression**
+
+
+一、用户需求清单完成度
+==================================================================
+
+[1] 2 套新白底模板（business_compact + research_report）         ✅ 完成
+   - business_compact.py：compact_dense 商务紧凑，line 1.15 / margin 2.0cm
+     5 段骨架：执行摘要 / 业务回顾 / 关键数据 / 风险与阻塞 / 下一步
+   - research_report.py：institutional 研报标准，margin 2.0cm / line 1.3
+     6 段骨架：公司概览 / 投资摘要 / 行业分析 / 财务分析 / 估值与目标价 / 风险因素
+   - 模板总数：16 → 18
+
+[2] 评级摘要卡 / 估值表 / 盈利预测表 / 风险提示栏专业模块         ✅ 完成
+   - render_rating_badge：Overweight 绿 / Hold 琥珀 / Underweight 红
+     + 别名支持（Buy/Neutral/Sell/Accumulate/Reduce）
+   - render_research_header：4 字段强制 stock_code/rating/target_price/report_date
+     + 自动算 upside% + 紫红斜体副标题
+   - render_risk_disclaimer_footer：固定尾部"本报告仅供研究参考..."
+     灰色斜体 8pt，中英文 + 自定义机构名
+   - 估值/盈利预测表走 auto_compute_rows（YoY + sum/avg 汇总）
+
+[3] 表格 5 项新能力                                              ✅ 完成
+   - render_conditional_cell（同比标红/标绿 + 阈值染色）
+   - render_progress_bar（unicode 块字符 0-100% 进度条）
+   - render_star_rating（unicode ★/☆ + 半星 ⯨）
+   - render_merged_header（二维表头行/列自动合并）
+   - auto_compute_rows（YoY 列 + sum/avg 汇总行）
+   + 底层 helper：compute_yoy / compute_summary / yoy_color_for（纯函数）
+
+[4] KPI 卡片行（横向 3-5 卡）                                    ✅ 完成
+   - render_kpi_card_row：label / value / delta / sparkline 四层
+   - delta ▲▼+ 同比染色（正绿/负红/零灰）
+   - sparkline 用 ▁▂▃▄▅▆▇█ unicode 块字符（无 matplotlib 依赖）
+
+[5] 研报 header 模块（股票代码/评级/目标价/日期）                 ✅ 完成
+   - render_research_header：4 字段强制（缺一抛 ValueError）
+
+[6] 风险提示固定尾部                                             ✅ 完成
+   - render_risk_disclaimer_footer：默认中英文双语 + 灰色斜体 8pt
+
+
+二、亲审验证记录（主 Agent 亲跑 V1-V8）
+==================================================================
+
+V1: 18 模板 self_audit
+    $ python -m pro_docx_gen.self_audit --templates
+    Summary: Templates: 18/18 passed
+    exit: 0
+    （含 business_compact + research_report 两个新模板）
+
+V2: 3 demo docx self_audit
+    business_compact_demo.docx  : 0 violations
+    research_report_demo.docx   : 0 violations
+    table_advanced_features_demo.docx : 0 violations
+    exit: 0
+
+V3: 黑名单 hex 残留
+    templates/ 0 命中
+    新模块（kpi_cards/research_modules/auto_calc）0 命中
+    renderer.py 命中是 docstring 注释（解释 v1.6.6 修根因），非硬编码
+    exit: 0
+
+V4: version & 12 API 顶层导出
+    pro_docx_gen.__version__ = "1.7.0"
+    12/12 API 全部 import 成功：
+      render_conditional_cell, render_progress_bar, render_star_rating,
+      render_merged_header, auto_compute_rows, render_kpi_card_row,
+      render_research_header, render_rating_badge, render_risk_disclaimer_footer,
+      compute_yoy, compute_summary, yoy_color_for
+
+V5: 3 份 demo docx 真实存在
+    business_compact_demo.docx      39439 bytes
+    research_report_demo.docx       40962 bytes
+    table_advanced_features_demo.docx 39138 bytes
+
+V6: 模板数 18 ✅
+
+V7: v1.6.6 三大层全部保留
+    Layer 1 (renderer 强制覆盖)：DocxRenderer.__init__ line 285-286
+      color_dict["heading"] = _heading_rgb()
+      color_dict["title"]   = _heading_rgb()
+      仍在生效（self_audit 18 模板 0 violations 间接证明）
+    Layer 2 (quality_gate)：check_heading_color_consistency 在 line 410
+    Layer 3 (self_audit)：audit_template_file line 198 / audit_docx_output line 426
+
+V8: 评级三色 + 紫红不在黑名单
+    FORBIDDEN_HEADING_HEXES = 10 项
+    #0E7C3A (绿评级) → 不在 ✅
+    #B45309 (琥珀评级) → 不在 ✅
+    #B91C1C (红评级) → 不在 ✅
+    #6B2C91 (紫红) → 不在 ✅
+    评级色只用于 cell-shading / run-color，不进 heading 字段
+
+
+三、变更文件清单
+==================================================================
+
+新文件 (5):
+  - pro_docx_gen/shared/auto_calc.py
+  - pro_docx_gen/engine/kpi_cards.py
+  - pro_docx_gen/engine/research_modules.py
+  - pro_docx_gen/templates/business_compact.py
+  - pro_docx_gen/templates/research_report.py
+  - pro_docx_gen/v17_make_demos.py
+  - pro_docx_gen/v17_test_report.txt
+  - pro_docx_gen/v17_demo/business_compact_demo.docx
+  - pro_docx_gen/v17_demo/research_report_demo.docx
+  - pro_docx_gen/v17_demo/table_advanced_features_demo.docx
+
+修改文件 (5):
+  - pro_docx_gen/engine/renderer.py        (2725 → 3325 行, +552)
+  - pro_docx_gen/templates/__init__.py     (注册 2 新模板)
+  - pro_docx_gen/__init__.py               (version 1.6.6→1.7.0, 导出 12 API)
+  - SKILL.md                               (顶部 + 末尾 v1.7.0 段 ~110 行)
+  - CHANGELOG.md                           (头部 v1.7.0 段)
+
+
+四、颜色规范（v1.7.0 不破坏 v1.6.6 铁律）
+==================================================================
+
+规范层（v1.6.6 不动）：
+  HEADING_HEX = "#1A1A1A"   # 标题
+  TEXT_HEX    = "#333333"   # 正文
+  MUTED_HEX   = "#666666"   # 次要
+  FORBIDDEN_HEADING_HEXES = 10 项
+
+研报色板（v1.7.0 新增，仅用于 run-color / cell-shading）：
+  深蓝主色  #1F3864（继承 academic primary）
+  紫红强调  #6B2C91（副标题）
+  评级绿    #0E7C3A（Overweight / 正增长）
+  评级琥珀  #B45309（Hold）
+  评级红    #B91C1C（Underweight / 负增长）
+  暖琥珀星级 #D97706
+
+**全部 6 个新色不命中黑名单**，且不进 heading 字段；
+heading 仍由 _heading_rgb() 强制覆盖保证 #1A1A1A。
+
+
+五、SKILL.md / CHANGELOG.md / 文档
+==================================================================
+
+SKILL.md：
+  - 顶部 description 改写含 v1.7.0 能力描述
+  - line 6 标题改为 v1.7.0
+  - line 378+ 新增 v1.7.0 Research-Report Toolchain 段（~110 行）
+  - 含：颜色策略 / 验收对照 / v1.7.0 Notes
+
+CHANGELOG.md：
+  - 头部 v1.7.0 段（13 条 bullet）
+  - 含版本号、模板、能力、模块、色板、API、防复发保留、铁律不动、修根因、零依赖等
+
+子 agent 验证报告：pro_docx_gen/v17_test_report.txt（426 行）
+
+
+六、后续维护建议
+==================================================================
+
+1. 加新模板时：python -m pro_docx_gen.self_audit --templates
+   失败就拒绝注册（v1.6.6 规则，v1.7.0 扩到 18 模板同样适用）
+
+2. 改 renderer.py 表格引擎 / 研报模块时：
+   - 必跑 python -m pro_docx_gen.self_audit --docx <demo>
+   - 必跑 3 份 v17_demo 全部 self_audit 0 violations
+
+3. 改 color_palette.py 时：
+   - HEADING_HEX / TEXT_HEX / MUTED_HEX / FORBIDDEN_HEADING_HEXES 不可删
+   - 新增评级色只能走 auto_calc.YOY_COLOR 或 research_modules 的 RATING_COLOR_*
+   - 不可直接散落写色值
+
+4. 改研报 header 时：4 字段不可少一个（render_research_header 强制）
+
+5. 发布前必跑：
+   python -m pro_docx_gen.self_audit --templates   # 18/18
+   for f in pro_docx_gen/v17_demo/*.docx; do
+     python -m pro_docx_gen.self_audit --docx "$f"  # 0 violations
+   done
+   python quality_gates/run_quality_gate.py --with-self-audit --no-render
+
+==================================================================
+报告结束
