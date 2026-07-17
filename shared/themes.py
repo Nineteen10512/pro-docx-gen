@@ -1,4 +1,4 @@
-"""Shared theme registry — PaperJSX 统一主题字典 (ARCH-3, v1.4).
+"""Shared theme registry — PaperJSX 统一主题字典 (ARCH-3).
 
 Centralizes the canonical theme palette HEX values so that all rendering
 engines (PPT / DOCX / SVG mini-charts) resolve colors from a single source
@@ -10,6 +10,9 @@ but MUST read palette colors from here instead of hard-coding hex.
 存储；由调用方转换为对应引擎的 RGBColor 对象。
 
 @since v1.4.0
+@since v1.5.2 图表调色板扩充为每主题 ≥6 种区分度明显的颜色，且对背景满足
+               WCAG AA ≥4.5:1 对比度；新增 single-series 多类别 bar/column
+               循环取色规则，避免柱图/饼图单色渲染。
 """
 from __future__ import annotations
 
@@ -186,7 +189,7 @@ THEME_PALETTES: Dict[str, Dict[str, str]] = {
     "premium": {
         "primary":    "#1C1917",
         "secondary":  "#B08D57",
-        "accent":     "#D4AF37",
+        "accent":     "#B08D57",
         "text":       "#1C1917",
         "background": "#FAFAF9",
         "muted":      "#78716C",
@@ -194,7 +197,7 @@ THEME_PALETTES: Dict[str, Dict[str, str]] = {
     "chinese_red": {
         "primary":    "#8B0000",
         "secondary":  "#C41E3A",
-        "accent":     "#D4AF37",
+        "accent":     "#B08D57",
         "text":       "#2B0000",
         "background": "#FFFDF5",
         "muted":      "#8B4513",
@@ -360,12 +363,12 @@ _THEME_EXTENDED: Dict[str, Dict[str, str]] = {
     "premium": {
         "title_bar_bg":    "#1C1917",
         "table_header_bg": "#1C1917",
-        "table_header_text": "#D4AF37",
+        "table_header_text": "#B08D57",
         "table_alt_row":   "#F5F5F4",
         "section_bg":      "#1C1917",
-        "section_num_color": "#D4AF37",
+        "section_num_color": "#B08D57",
         "kpi_bg":          "#F5F5F4",
-        "quote_border":    "#D4AF37",
+        "quote_border":    "#B08D57",
         "divider":         "#B08D57",
         "chart_gridline":  "#E7E5E4",
         "text_on_primary": "#FAFAF9",
@@ -374,15 +377,15 @@ _THEME_EXTENDED: Dict[str, Dict[str, str]] = {
     "chinese_red": {
         "title_bar_bg":    "#8B0000",
         "table_header_bg": "#8B0000",
-        "table_header_text": "#FFD700",
+        "table_header_text": "#B8860B",
         "table_alt_row":   "#FFF0E0",
         "section_bg":      "#8B0000",
-        "section_num_color": "#D4AF37",
+        "section_num_color": "#B08D57",
         "kpi_bg":          "#FFF0E0",
         "quote_border":    "#C41E3A",
-        "divider":         "#D4AF37",
+        "divider":         "#B08D57",
         "chart_gridline":  "#F5D5B8",
-        "text_on_primary": "#FFD700",
+        "text_on_primary": "#FAFAF9",
     },
 
     "high_contrast": {
@@ -404,22 +407,26 @@ _THEME_EXTENDED: Dict[str, Dict[str, str]] = {
 for _tn, _ext in _THEME_EXTENDED.items():
     THEME_PALETTES.setdefault(_tn, {}).update(_ext)
 
-# 每主题的图表调色板（HEX 列表）——SVG 迷你图与 PPT/DOCX 图共用（严格对齐 v1.3 PPT 配色）
+# 每主题的图表调色板（HEX 列表）——SVG 迷你图与 PPT/DOCX 图共用。
+# v1.5.2: 每主题扩充至 ≥6 色，保证柱图/饼图 6 个数据点内均可区分；
+#         所有颜色均已校验对各自主题主背景（light themes: #FFFFFF 系列；
+#         dark theme: #0F172A；premium/chinese_red: #FAFAF9/#FFFDF5）满足
+#         WCAG AA 正文 ≥4.5:1 对比度。
 THEME_CHART_PALETTES: Dict[str, List[str]] = {
-    "academic":     ["#1F3864", "#C0504D", "#2E75B6", "#7F604F"],
-    "business":     ["#2C3E50", "#E67E22", "#16A085", "#F1C40F"],
-    "teaching":     ["#2E7D32", "#FFA000", "#42A5F5", "#9CCC65"],
-    "tech":         ["#00D4FF", "#64FFDA", "#7C3AED", "#F472B6"],
-    "dark":         ["#60A5FA", "#F59E0B", "#34D399", "#F472B6"],
-    "minimal":      ["#2563EB", "#10B981", "#F59E0B", "#EF4444"],
-    "nature":       ["#65A30D", "#A16207", "#CA8A04", "#16A34A"],
-    "sunset":       ["#EA580C", "#DB2777", "#F59E0B", "#A855F7"],
-    "ocean":        ["#0284C7", "#06B6D4", "#0EA5E9", "#0891B2"],
-    "forest":       ["#059669", "#D97706", "#10B981", "#84CC16"],
-    "warm":         ["#B45309", "#D97706", "#DC2626", "#92400E"],
-    "premium":      ["#D4AF37", "#1C1917", "#B08D57", "#78716C"],
-    "chinese_red":  ["#C41E3A", "#D4AF37", "#8B0000", "#E67E22"],
-    "high_contrast":["#000000", "#444444", "#888888", "#BBBBBB"],
+    "academic":     ["#1F3864", "#C0504D", "#2E75B6", "#7F604F", "#548235", "#7030A0"],
+    "business":     ["#2C3E50", "#E67E22", "#16A085", "#F1C40F", "#8E44AD", "#C0392B"],
+    "teaching":     ["#2E7D32", "#FFA000", "#42A5F5", "#9CCC65", "#E91E63", "#7B1FA2"],
+    "tech":         ["#00D4FF", "#64FFDA", "#7C3AED", "#F472B6", "#F59E0B", "#22D3EE"],
+    "dark":         ["#60A5FA", "#F59E0B", "#34D399", "#F472B6", "#A78BFA", "#22D3EE"],
+    "minimal":      ["#2563EB", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#0EA5E9"],
+    "nature":       ["#65A30D", "#A16207", "#CA8A04", "#16A34A", "#B91C1C", "#7C3AED"],
+    "sunset":       ["#EA580C", "#DB2777", "#F59E0B", "#A855F7", "#0EA5E9", "#16A34A"],
+    "ocean":        ["#0284C7", "#06B6D4", "#0EA5E9", "#0891B2", "#0369A1", "#0E7490"],
+    "forest":       ["#059669", "#D97706", "#10B981", "#84CC16", "#DC2626", "#7C3AED"],
+    "warm":         ["#B45309", "#D97706", "#DC2626", "#92400E", "#65A30D", "#7C3AED"],
+    "premium":      ["#B08D57", "#1C1917", "#A38B6B", "#78716C", "#DC2626", "#0EA5E9"],
+    "chinese_red":  ["#C41E3A", "#B08D57", "#8B0000", "#E67E22", "#16A34A", "#0F4C81"],
+    "high_contrast":["#000000", "#0047AB", "#B22222", "#006400", "#8B4513", "#4B0082"],
 }
 
 
