@@ -1,35 +1,142 @@
-# Pro Docx Gen v1.6.2
+# PRO-DOCX v1.6.6
 
-> AI-powered document generator — professional Word documents with revision tracking, comments, and format preservation.
+Professional DOCX generation, editing, translation, and delivery QA skill.
 
-**Pro Docx Gen** 是一款专业级 AI Word 文档生成技能，支持创建、编辑、修订追踪、批注、格式保留和文本提取。v1.6.0 起引入 auto_style 商务排版引擎。
+## Install
 
----
+Install dependencies from:
 
-## ✨ 核心功能 | Core Features
+```bash
+pip install -r pro_docx_gen/requirements.txt
+```
 
-| 功能 | Feature | 说明 |
-|------|---------|------|
-| 📝 文档生成 | Document Generation | 从自然语言描述一键生成结构化 Word 文档 |
-| 🎨 商务排版引擎 | Auto-Style Engine | v1.6.0 新增，自动应用专业商务排版（字体、间距、页眉页脚） |
-| ✏️ 文档编辑 | Document Editing | 支持内容修改、格式调整、样式应用 |
-| 📋 修订追踪 | Revision Tracking | 完整的修订追踪支持，适合协作审阅 |
-| 💬 批注 | Comments | 添加、回复、删除批注 |
-| 🔤 格式保留 | Format Preservation | 修改内容时保持原有格式不变 |
-| 📖 文本提取 | Text Extraction | 从现有文档中提取纯文本内容 |
-| 🔡 行内加粗 | Inline Bold | v1.6.2 修复，支持段落内局部加粗 |
-| 📊 表格加粗 | Table Bold | v1.6.2 修复，表格内容加粗正常渲染 |
+Required dependencies:
 
-## 🚀 核心优势 | Key Advantages
+```text
+python-docx>=0.8.11
+matplotlib>=3.5
+numpy>=1.20
+lxml>=4.9
+latex2mathml>=3.0.0
+Pillow>=9.0
+```
 
-- **自然语言即文档**：描述需求即可生成专业 Word 文档，告别手动排版
-- **商务级颜值**：auto_style 引擎自动匹配专业排版规范，输出可直接交付
-- **协作友好**：修订追踪 + 批注，完美适配团队审阅流程
-- **格式零损失**：编辑已有文档时保持原有格式，不会破坏排版
-- **持续修复**：v1.6.2 修复行内加粗和表格加粗，稳定可靠
+## Agent Quick Path
 
-## 🔧 触发词 | Triggers
+Run from package root. Do not hand-build paths unless the command asks for one.
 
-`docx` `word` `文档` `报告` `合同` `协议` `简历` `说明书`
+```bash
+python agent_docx.py doctor
+python agent_docx.py portability-check
+python agent_docx.py start my-report
+# generate or edit the DOCX, then:
+python agent_docx.py deliver path/to/output.docx --job my-report
+```
 
+The entrypoint fixes `PYTHONPATH`, forces `PYTHONIOENCODING=utf-8`, stores runtime files under `_work/`, runs strict delivery QA with `--created-after`, and applies safe DOCX layout auto-fix by default. Warnings and errors still fail.
 
+`deliver` first runs structural layout QA for TOC bookmarks, direct cell borders, redundant page breaks, adjacent section breaks, role font-size drift, and undersized figures. Documents without figures render one page from every consecutive three-page group. Documents with figures render every page so every figure page and both neighbors can be reviewed. Review bundles use 2x2 sheets with up to four source pages.
+
+Hard gate: if any reviewed page fails aesthetically or semantically, repair the smallest affected source block/page/section and rerun `deliver`.
+
+Use `try_render_specific_pages(docx_path, output_dir, [page_numbers])` from `quality_gates/run_quality_gate.py` for adjacent-page expansion. It exports only the explicit pages through WPS/Word COM. PNG conversion uses short sampled-PDF aliases to avoid Windows long-path failures.
+
+If the visual failure is caused by reusable skill behavior, patch the smallest relevant skill code/prompt/gate and include a short problem report. Do not hide a skill defect by manually editing only the final output.
+
+Useful commands:
+
+```bash
+python agent_docx.py smoke
+python agent_docx.py portability-check --zip pro-docx-gen-v1.6.6-chart-legibility-gate.zip --json-report _work/portability_report.json
+python agent_docx.py package-check pro-docx-gen-v1.6.6-chart-legibility-gate.zip
+python agent_docx.py read-text pro_docx_gen/SKILL.md --lines 40
+python agent_docx.py clean
+```
+
+Default smoke is intentionally limited to the gate layer and render layer. If a specific feature has a problem, run a focused target instead:
+
+```bash
+python agent_docx.py smoke --target table
+python agent_docx.py smoke --target chart
+python agent_docx.py smoke --profile full
+```
+
+`--profile full` is for release checks or broad refactors. Do not use feature-specific smoke as the default path.
+
+`portability-check` validates required Python modules, UTF-8 text handling, root import, package-only import, local path leaks, release zip layout, selective WPS/Word page export, and PDF-to-PNG preview availability. A strict delivery-capable device needs WPS or Microsoft Word COM plus Poppler/pdftoppm, PyMuPDF, or pdf2image.
+
+If `portability-check` reports a missing render backend, install WPS or Microsoft Word desktop on Windows so the selective page export backend is available. LibreOffice full-document conversion does not satisfy strict delivery. For PDF-to-PNG, install Poppler/pdftoppm or PyMuPDF (`python -m pip install pymupdf`). `--no-render` is diagnostic only and must not be used for final delivery.
+
+For Chinese text: read source files as UTF-8, not console-default ANSI/GBK. PowerShell may display valid UTF-8 Chinese as mojibake; confirm with `python agent_docx.py read-text ...` or `python quality_gates/check_text_encoding.py .` before editing.
+
+## Smoke Test
+
+Run from package root:
+
+```bash
+python smoke_tests/run_smoke_tests.py
+```
+
+The default smoke suite checks gate-layer behavior and render-layer behavior: imports, package-only import compatibility, version, strict gate failures, zip layout, text encoding, portability, DOCX rendering, one-in-three sampling, and four-up review PDF/PNG generation. Feature-specific smoke is targeted with `--target table`, `--target chart`, `--target save`, `--target package`, `--target gate`, or `--target render`.
+
+If Windows resolves `python` to the Microsoft Store stub, run the same command with the active environment's real interpreter path.
+
+## Text Encoding Gate
+
+Run before packaging:
+
+```bash
+python quality_gates/check_text_encoding.py .
+```
+
+This blocks common UTF-8/CP936 mojibake and replacement characters. If it fails, fix encoding cause and text content; do not skip garbled regions.
+
+## Delivery Quality Gate
+
+Run before delivering any DOCX:
+
+```bash
+python quality_gates/run_quality_gate.py output.docx --json-report output/quality_report.json --output-dir output/quality
+```
+
+Warnings fail by default. Render verification is mandatory by default. The gate uses LibreOffice first, then Word COM on Windows.
+
+To repair safe DOCX table layout issues detected by the gate:
+
+```bash
+python quality_gates/run_quality_gate.py output.docx --auto-fix --json-report output/quality_report.json --output-dir output/quality
+```
+
+`--auto-fix` repairs safe layout defects only: narrow table headers, narrow short body labels, and long rows that can split across pages. It re-runs the quality gate after editing.
+
+DOCX generation and translation save through a temporary sibling file, then replace the target. If Word/WPS has the target open, the skill raises a clear locked-file error instead of risking a partially written document.
+
+## Release Zip Layout
+
+Expected release shape:
+
+```text
+pro-docx-gen/
+  SKILL.md
+  pro_docx_gen/
+  quality_gates/
+  smoke_tests/
+  codex_adaptation/
+  README.md
+  CHANGELOG.md
+```
+
+Validate zip before publishing:
+
+```bash
+python quality_gates/check_zip_layout.py pro-docx-gen-v1.6.6-chart-legibility-gate.zip
+```
+
+Release zips must not contain runtime `_work`, smoke `_output*` directories, generated documents/images/archives, `chart_assets`, cache files, temporary files, or local absolute paths such as user-home and temp-runtime paths.
+
+Forbidden downgrade paths:
+
+- Do not remove full-file structural verification, conditional render scope, one-in-three sampling for figure-free documents, full-page rendering for documents with figures, or the four-up review bundle from final delivery.
+- Do not allow warnings/errors to pass in final gates.
+- Do not remove the top-level `shared/` compatibility package; use wrappers if slimming duplicate code.
+- Do not make feature-specific smoke the default; default smoke must remain gate plus render.
