@@ -59,6 +59,7 @@ class DOCXTemplate:
     name: str
     display_name: str
     scene: str = "general"
+    variant: str = ""  # v1.6.0
     base_theme: str = "academic"
     theme_overrides: dict = field(default_factory=dict)
     default_font: Optional[dict] = None
