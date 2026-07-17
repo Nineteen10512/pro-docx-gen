@@ -1,0 +1,23 @@
+{
+  "source_version": "1.6.6",
+  "target_runtime": "Codex on Windows",
+  "root_skill_file": "SKILL.md",
+  "selective_page_export_backends": [
+    "WPS Office COM",
+    "Microsoft Word COM"
+  ],
+  "visual_review": {
+    "full_document_structural_audit_required": true,
+    "render_scope": "sampled_if_no_figures_full_document_if_figures",
+    "sample_group_size": 3,
+    "samples_per_group": 1,
+    "minimum_samples": 1,
+    "review_pdf_layout": "2x2",
+    "sampled_pages_per_pdf_sheet": 4,
+    "figure_review": "all pages; every figure page and immediate neighbors",
+    "expand_on_failure": "adjacent pages and affected section",
+    "full_document_render_fallback": false
+  },
+  "sandbox_safe_workdirs": true,
+  "warnings_are_blocking": true
+}
